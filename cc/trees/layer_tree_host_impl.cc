@@ -2820,6 +2820,28 @@ RenderFrameMetadata LayerTreeHostImpl::MakeRenderFrameMetadata(
 }
 
 std::optional<SubmitInfo> LayerTreeHostImpl::DrawLayers(FrameData* frame) {
+
+  // 1. Capture the current monotonic time.
+  base::TimeTicks current_draw_time = base::TimeTicks::Now();
+
+  // 2. Compute FPS and emit a contiguous trace slice if a previous frame exists.
+  if (!last_draw_time_.is_null()) {
+    base::TimeDelta interval = current_draw_time - last_draw_time_;
+
+    if (interval.InMicroseconds() > 0) {
+      int64_t current_fps = base::Time::kMicrosecondsPerSecond / interval.InMicroseconds();
+      std::string slice_name = base::StringPrintf("FPS: %" PRId64, current_fps);
+
+      TRACE_EVENT_COPY_NESTABLE_ASYNC_BEGIN_WITH_TIMESTAMP0(
+          "benchmark", slice_name.c_str(), this, last_draw_time_);
+      TRACE_EVENT_COPY_NESTABLE_ASYNC_END_WITH_TIMESTAMP0(
+          "benchmark", slice_name.c_str(), this, current_draw_time);
+    }
+  }
+
+  // 4. Persist the timestamp for the subsequent frame.
+  last_draw_time_ = current_draw_time;
+
   DCHECK(CanDraw());
   DCHECK_EQ(frame->has_no_damage, frame->render_passes.empty());
   ResetRequiresHighResToDraw();

@@ -948,6 +948,7 @@ class CC_EXPORT LayerTreeHostImpl : public TileManagerClient,
   BeginFrameTracker current_begin_frame_tracker_;
 
  private:
+  base::TimeTicks last_draw_time_;
   // Holds image decode cache instance. It can either be a shared cache or
   // a cache create by this instance. Which is used depends on the settings.
   class ImageDecodeCacheHolder;
